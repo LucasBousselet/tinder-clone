@@ -1,4 +1,4 @@
-{
+export default {
   "expo": {
     "name": "tinder-clone",
     "slug": "tinder-clone",
@@ -18,10 +18,12 @@
       "@react-native-google-signin/google-signin"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "host.exp.exponent",
+      "googleServiceFile": process.env.GOOGLE_SERVICES_INFOPLIST
     },
     "android": {
-      "googleServiceFile": "./google-services.json",
+      "googleServiceFile": process.env.GOOGLE_SERVICES_JSON,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"

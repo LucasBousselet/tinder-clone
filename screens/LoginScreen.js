@@ -1,20 +1,24 @@
-import { View, Text } from 'react-native'
+import { View, Text, Button } from 'react-native'
 import React from 'react'
 import useAuth from '../hooks/useAuth'
 import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
 
 export default function LoginScreen() {
-    const { signIn } = useAuth();
+    const { user, error, signIn, logout } = useAuth();
 
     return (
         <View>
-            <Text>Login</Text>
-            <GoogleSigninButton
-                size={GoogleSigninButton.Size.Wide}
-                color={GoogleSigninButton.Color.Dark}
-                onPress={this.signIn}
-                disabled={this.state.isSigninInProgress}
-            />;
+            <Text>Login v3</Text>
+            <Text>{JSON.stringify(error)}</Text>
+            {user && <Text>{JSON.stringify(user)}</Text>}
+            {!user && (
+                <GoogleSigninButton
+                    size={GoogleSigninButton.Size.Wide}
+                    color={GoogleSigninButton.Color.Dark}
+                    onPress={signIn}
+                // disabled={this.state.isSigninInProgress}
+                />
+            )}
         </View>
     )
 }

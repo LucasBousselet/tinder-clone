@@ -37,4 +37,8 @@ yarn-error.*
 # google auth secret
 google-services.json
 
+# build folder
 android/
+
+# env variables
+.env
