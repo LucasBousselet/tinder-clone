@@ -10,7 +10,6 @@ export default function LoginScreen() {
         <View>
             <Text>Login v3</Text>
             <Text>{JSON.stringify(error)}</Text>
-            {user && <Text>{JSON.stringify(user)}</Text>}
             {!user && (
                 <GoogleSigninButton
                     size={GoogleSigninButton.Size.Wide}

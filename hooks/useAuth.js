@@ -3,6 +3,13 @@ import {
     GoogleSignin,
     statusCodes
 } from '@react-native-google-signin/google-signin';
+import {
+    GoogleAuthProvider,
+    onAuthStateChanged,
+    signInWithCredential,
+    signOut
+} from 'firebase/auth'
+import { auth } from '../firebase';
 
 // Creates context with initial state
 const AuthContext = createContext({});
@@ -23,7 +30,19 @@ export const AuthProvider = ({ children }) => {
             const userInfo = await GoogleSignin.signIn();
             setUser(userInfo);
             setError();
+            const credential = GoogleAuthProvider.credential(userInfo.idToken);
+
+            signInWithCredential(auth, credential).catch(function (error) {
+                // Handle Errors here.
+                const errorCode = error.code;
+                const errorMessage = error.message;
+                // The email of the user's account used.
+                const email = error.email;
+                // The credential that was used.
+                const credential = GoogleAuthProvider.credentialFromError(error);
+            });
         } catch (error) {
+            console.error(error);
             switch (error.code) {
                 case statusCodes.SIGN_IN_CANCELLED:
                     // user cancelled the login flow
