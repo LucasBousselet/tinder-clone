@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import {
     GoogleSignin,
     statusCodes
@@ -15,23 +15,48 @@ import { auth } from '../firebase';
 const AuthContext = createContext({});
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState();
-    const [error, setError] = useState();
+    const [user, setUser] = useState(null);
+    const [error, setError] = useState(null);
+    const [authLoading, setAuthLoading] = useState(true);
+    const [appLoading, setAppLoading] = useState(false);
 
     useEffect(() => {
         GoogleSignin.configure({
             webClientId: process.env.OAUTH_WEBCLIENT_ID
         });
+
+        // The following observer fires off everytime a change of state is happening for the current user (logged-in / out usually)
+        const unsub = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // user just logged in
+                setUser(user);
+            } else {
+                // logged out
+                setUser(null);
+            }
+            setAuthLoading(false)
+        });
+        return unsub;
     }, []);
 
     const signIn = async () => {
         try {
+            setAppLoading(true);
+            /**
+             * On Android, we need to make sure Play Services has been enabled.
+             * On iOS, the next line returns immediately.
+             */
             await GoogleSignin.hasPlayServices();
             const userInfo = await GoogleSignin.signIn();
-            setUser(userInfo);
+            // setUser(userInfo);
             setError();
             const credential = GoogleAuthProvider.credential(userInfo.idToken);
 
+            /**
+             * See docs linked in firebase.js, we are handling the sign-in workflow manually. Meaning we aren't using Firebase SDK itself to
+             * sign-in through Google, but instead we are implementing Google sign-in with its own library (react-native-google-signin), and then
+             * handing off the idToken to Firebase as credentials.
+             */
             signInWithCredential(auth, credential).catch(function (error) {
                 // Handle Errors here.
                 const errorCode = error.code;
@@ -60,18 +85,32 @@ export const AuthProvider = ({ children }) => {
                     setError(error);
                 // some other error happened
             }
+        } finally {
+            setAppLoading(false);
         }
     };
 
     const logout = () => {
         setUser();
+        setAppLoading(true);
         GoogleSignin.revokeAccess();
         GoogleSignin.signOut();
+        signOut(auth)
+            .catch(err => setError(err))
+            .finally(() => setAppLoading(false));
     }
 
+    const authContextData = useMemo(() => ({
+        user,
+        error,
+        appLoading,
+        signIn,
+        logout
+    }), [user, error, appLoading]);
+
     return (
-        <AuthContext.Provider value={{ user, error, signIn, logout }}>
-            {children}
+        <AuthContext.Provider value={authContextData}>
+            {!authLoading && children}
         </AuthContext.Provider>
     )
 }

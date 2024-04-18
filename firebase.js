@@ -26,6 +26,12 @@ const analytics = getAnalytics(app);
  * In this file we are integrating Firebase into our project, in order to keep track of the connected users.
  * For this we need the getAuth method to authenticate ourselves against Firebase, and also
  * a Firebase database, called FireStore (real-time no sql DB)
+ * More info on using Firebase in Expo:
+ * https://docs.expo.dev/guides/using-firebase/#using-firebase-js-sdk
+ * Possible improvement is to use React Native Firebase instead of Firebase JS SDK
+ * 
+ * Doc for the Authentication + link to Google sign-in specifically:
+ * https://firebase.google.com/docs/auth/web/start#web-modular-api
  */
 
 const auth = getAuth();

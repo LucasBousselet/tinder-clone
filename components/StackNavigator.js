@@ -11,7 +11,9 @@ export default function StackNavigator() {
     const { user } = useAuth();
 
     return (
-        <Stack.Navigator>
+        <Stack.Navigator screenOptions={{
+            headerShown: false
+        }}>
             {/* Screen at the top is rendered as landing screen */}
             {user ? (
                 <>
