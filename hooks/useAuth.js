@@ -27,6 +27,8 @@ export const AuthProvider = ({ children }) => {
 
         // The following observer fires off everytime a change of state is happening for the current user (logged-in / out usually)
         const unsub = onAuthStateChanged(auth, (user) => {
+            console.log('here')
+            console.log(!!user);
             if (user) {
                 // user just logged in
                 setUser(user);
