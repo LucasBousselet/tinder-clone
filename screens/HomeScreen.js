@@ -5,28 +5,9 @@ import useAuth from '../hooks/useAuth'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AntDesign, Entypo, Ionicons } from '@expo/vector-icons'
 import Swiper from 'react-native-deck-swiper'
-import { collection, doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, getDoc, onSnapshot, query, setDoc, where, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-
-const DUMMY_DATA = [{
-    firstName: 'Lucas',
-    lastName: 'B',
-    occupation: 'Senior Software Developer',
-    photoURL: 'https://avatars.githubusercontent.com/u/24712956?v=4',
-    age: 30
-}, {
-    firstName: 'Teddy',
-    lastName: 'B',
-    occupation: 'Graphic Designer',
-    photoURL: 'https://avatars.githubusercontent.com/u/24712956?v=4',
-    age: 30
-}, {
-    firstName: 'James',
-    lastName: 'S',
-    occupation: 'Welder Trade Worker',
-    photoURL: 'https://avatars.githubusercontent.com/u/24712956?v=4',
-    age: 30
-}]
+import { generateId } from '../lib/generateId'
 
 export default function HomeScreen() {
     const navigation = useNavigation();
@@ -49,7 +30,26 @@ export default function HomeScreen() {
         let unsub;
 
         const fetchCards = async () => {
-            unsub = onSnapshot(collection(db, 'Users'), snapshot => {
+            // Fetches the logged-in user doc. Firebase only allows retrieval of the full doc.
+            const userDoc = await getDoc(doc(db, 'Users', user.uid));
+
+            let passedUserIds;
+            let swipedUserIds;
+            // Extracts the users we've swiped left/right so we can filter them out of the suggested profiles.
+            if (userDoc.exists()) {
+                const passedProfileIds = userDoc.data().passes;
+                const swipedProfileIds = userDoc.data().swipes;
+                passedUserIds = passedProfileIds?.length > 0 ? passedProfileIds : ['test'];
+                swipedUserIds = swipedProfileIds?.length > 0 ? swipedProfileIds : ['test'];
+            } else {
+                passedUserIds = ['test'];
+                swipedUserIds = ['test'];
+            }
+            // Retrieves all users that we haven't swiped left/right.
+            unsub = onSnapshot(query(
+                collection(db, 'Users'),
+                where('id', 'not-in', [...passedUserIds, ...swipedUserIds])
+            ), snapshot => {
                 setProfiles(snapshot.docs.filter(doc => doc.id !== user.uid).map(doc => ({
                     ...doc.data(),
                     id: doc.id,
@@ -67,14 +67,48 @@ export default function HomeScreen() {
         const userSwiped = profiles[cardIndex];
         console.log('You swiped PASS on ' + userSwiped.displayName);
 
-        setDoc(doc(db, 'Users', user.uid, 'passes', userSwiped.id), userSwiped);
+        // Creates (or updates) a 'passes' property on the user's document, and adds the unwanted profile to it
+        updateDoc(doc(db, 'Users', user.uid), {
+            passes: arrayUnion(userSwiped.id)
+        });
     }
 
     const swipeRight = async (cardIndex) => {
+        if (!profiles[cardIndex]) return;
+        const userSwiped = profiles[cardIndex];
+        console.log('You swiped MATCH on ' + userSwiped.displayName);
 
+        const userDoc = await getDoc(doc(db, 'Users', user.uid));
+
+        // Creates (or updates) a 'swipes' property on the user's document, and adds the desired profile to it
+        updateDoc(doc(db, 'Users', user.uid), {
+            swipes: arrayUnion(userSwiped.id)
+        });
+
+        // Checks if that profile also swiped on you
+        const userSwipedDocLatest = await getDoc(doc(db, 'Users', userSwiped.id));
+        if (userDoc.exists() && userSwipedDocLatest.exists()) {
+            const { id: swipeeId, swipes: swipeeSwipes, displayName: swipeeName } = userSwipedDocLatest.data();
+            const isMatched = swipeeSwipes.includes(userDoc.data().id);
+
+            if (isMatched) {
+                console.log("Yay! You matched with " + swipeeName);
+                // Creates / updates the Matches collection. Adds the matching pair and their info
+                setDoc(doc(db, 'Matches', generateId(user.uid, swipeeId)), {
+                    users: {
+                        [user.uid]: userDoc.data(),
+                        [swipeeId]: userSwipedDocLatest.data()
+                    },
+                    usersMatched: [user.uid, swipeeId],
+                    timestamp: serverTimestamp()
+                }).catch(err => console.error(err))
+                navigation.navigate('Matched', {
+                    loggedInUser: userDoc.data(),
+                    userSwiped: userSwipedDocLatest.data()
+                });
+            }
+        }
     }
-
-    console.log(profiles);
 
     return (
         <SafeAreaView className='flex-1'>
