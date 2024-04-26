@@ -93,6 +93,8 @@ export default function HomeScreen() {
 
             if (isMatched) {
                 console.log("Yay! You matched with " + swipeeName);
+                console.log('user.uid', user.uid, 'swipeeId', swipeeId);
+                console.log(generateId(user.uid, swipeeId));
                 // Creates / updates the Matches collection. Adds the matching pair and their info
                 setDoc(doc(db, 'Matches', generateId(user.uid, swipeeId)), {
                     users: {

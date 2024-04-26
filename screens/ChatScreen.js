@@ -6,7 +6,7 @@ import ChatList from '../components/ChatList'
 
 export default function ChatScreen() {
     return (
-        <SafeAreaView className='bg-red-100 flex-1'>
+        <SafeAreaView className='flex-1'>
             <Header title='Chat' />
             <ChatList />
         </SafeAreaView>
